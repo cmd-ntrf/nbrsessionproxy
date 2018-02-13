@@ -17,9 +17,6 @@ define(function(require) {
             .attr('role', 'presentation')
             .addClass('divider');
 
-        /* add the divider */
-        menu.append(divider);
-
         /* create our list item */
         var rsession_item = $('<li>')
             .attr('role', 'presentation')
@@ -33,10 +30,16 @@ define(function(require) {
             .attr('target', '_blank')
             .text('RStudio Session');
 
-        /* add the link to the item and
-         * the item to the menu */
-        rsession_item.append(rsession_link);
-        menu.append(rsession_item);
+        $.getJSON('rstudio-avail', function (avail) {
+            if(avail) {
+                /* add the divider */
+                menu.append(divider);
+                /* add the link to the item and
+                 * the item to the menu */
+                rsession_item.append(rsession_link);
+                menu.append(rsession_item);
+            }
+        });
     }
 
     return {

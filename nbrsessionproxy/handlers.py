@@ -1,6 +1,9 @@
 import os
 import getpass
+import json
+
 from urllib.parse import urlunparse, urlparse
+from distutils.spawn import find_executable
 
 from tornado import web
 
@@ -18,11 +21,16 @@ class AddSlashHandler(IPythonHandler):
         dest = src._replace(path=src.path + '/')
         self.redirect(urlunparse(dest))
 
+class RServerAvail(IPythonHandler):
+    """Handler to verify if rserver binary is available."""
+    @web.authenticated
+    def get(self, *args):
+        self.write(json.dumps(find_executable(RServerProxyHandler.name) is not None))
 
-class RSessionProxyHandler(SuperviseAndProxyHandler):
-    '''Manage an RStudio rsession instance.'''
+class RServerProxyHandler(SuperviseAndProxyHandler):
+    '''Manage an RStudio rserver instance.'''
 
-    name = 'rsession'
+    name = 'rserver'
 
     def get_env(self):
         env = {}
@@ -35,14 +43,15 @@ class RSessionProxyHandler(SuperviseAndProxyHandler):
         return env
 
     def get_cmd(self):
-        # rsession command. Augmented with user-identity and www-port.
+        # rserver command. Augmented with www-port.
         return [
-            'rserver',
+            self.name,
             '--www-port=' + str(self.port)
         ]
 
 def setup_handlers(web_app):
     web_app.add_handlers('.*', [
-        (ujoin(web_app.settings['base_url'], 'rstudio/(.*)'), RSessionProxyHandler, dict(state={})),
-        (ujoin(web_app.settings['base_url'], 'rstudio'), AddSlashHandler)
+        (ujoin(web_app.settings['base_url'], 'rstudio/(.*)'), RServerProxyHandler, dict(state={})),
+        (ujoin(web_app.settings['base_url'], 'rstudio'), AddSlashHandler),
+        (ujoin(web_app.settings['base_url'], 'rstudio-avail'), RServerAvail),
     ])
